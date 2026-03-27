@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPERATION: NO MAN'S LAND — WW1 BREAKOUT</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;600;800&family=Special+Elite&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --g0: #000a00;
+  --g1: #001a00;
+  --g2: #002800;
+  --g3: #003800;
+  --glow: #00ff41;
+  --glow2: #39ff14;
+  --glow-dim: rgba(0,255,65,0.12);
+  --glow-mid: rgba(0,255,65,0.4);
+  --amber: #ffb700;
+  --red-alert: #ff2200;
+  --text-main: #c8ffcc;
+  --text-dim: #4a8850;
+  --text-bright: #e8ffe8;
+  --border: rgba(0,255,65,0.22);
+  --border-b: rgba(0,255,65,0.55);
+  --scan: rgba(0,0,0,0.32);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'Share Tech Mono',monospace;
+  background:var(--g0);
+  color:var(--text-main);
+  min-height:100vh;
+  overflow-x:hidden;
+  cursor:crosshair;
+}
+/* scanlines */
+body::after{
+  content:'';
+  position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--scan) 2px,var(--scan) 4px);
+  pointer-events:none;z-index:9998;
+  animation:scanroll 10s linear infinite;
+}
+@keyframes scanroll{0%{background-position:0 0}100%{background-position:0 400px}}
+/* vignette */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,0.82) 100%);
+  pointer-events:none;z-index:9997;
+}
+@keyframes flicker{0%,100%{opacity:1}92%{opacity:1}93%{opacity:.86}94%{opacity:1}96%{opacity:.92}97%{opacity:1}}
+@keyframes pulse-glow{
+  0%,100%{text-shadow:0 0 8px var(--glow),0 0 20px var(--glow);}
+  50%{text-shadow:0 0 16px var(--glow),0 0 45px var(--glow),0 0 70px rgba(0,255,65,.28);}
+}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes sweep{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+@keyframes cffall{0%{opacity:1;transform:translateY(-20px) rotate(0deg) scale(1)}100%{opacity:0;transform:translateY(110vh) rotate(720deg) scale(.4)}}
+
+.screen{display:none;min-height:100vh;}
+.screen.active{display:flex;flex-direction:column;}
+
+/* ══ INTRO ══ */
+#intro-screen{
+  background:var(--g0);
+  align-items:center;justify-content:center;
+  padding:2rem 1rem;
+  animation:flicker 9s infinite;
+  position:relative;overflow:hidden;
+}
+.grid-bg{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(0,255,65,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,65,.04) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+.iw{max-width:780px;width:100%;position:relative;z-index:1;animation:fadeUp .7s ease both;}
+
+/* bracket corners */
+.bx{position:relative;padding:1.8rem;margin-bottom:1.4rem;}
+.bx::before,.bx::after,.bx .br2::before,.bx .br2::after{
+  content:'';position:absolute;width:18px;height:18px;border-color:var(--glow);border-style:solid;
+}
+.bx::before{top:0;left:0;border-width:2px 0 0 2px;}
+.bx::after{top:0;right:0;border-width:2px 2px 0 0;}
+.bx .br2::before{bottom:0;left:0;border-width:0 0 2px 2px;}
+.bx .br2::after{bottom:0;right:0;border-width:0 2px 2px 0;}
+
+.bl{font-size:.7rem;letter-spacing:2px;color:var(--text-dim);margin-bottom:.22rem;
+  opacity:0;animation:fadeUp .4s ease forwards;}
+.bl:nth-child(1){animation-delay:.1s}.bl:nth-child(2){animation-delay:.3s}
+.bl:nth-child(3){animation-delay:.5s}.bl:nth-child(4){animation-delay:.7s}
+
+.ititle{
+  font-family:'Orbitron',sans-serif;font-weight:800;
+  font-size:clamp(1.9rem,5vw,3.8rem);color:var(--glow);letter-spacing:4px;line-height:1.1;
+  animation:pulse-glow 3s ease-in-out infinite,fadeUp .5s .85s ease both;opacity:0;
+  text-transform:uppercase;margin:1rem 0 .25rem;
+}
+.icode{font-size:.72rem;letter-spacing:6px;color:var(--amber);text-transform:uppercase;
+  margin-bottom:1.4rem;opacity:0;animation:fadeUp .5s 1.1s ease forwards;}
+.imsg{
+  background:linear-gradient(135deg,rgba(0,35,0,.6),rgba(0,15,0,.85));
+  border:1px solid var(--border);border-left:3px solid var(--glow);
+  padding:1.2rem 1.4rem;font-family:'Crimson Text',serif;font-size:1.05rem;line-height:1.85;
+  color:var(--text-main);margin-bottom:1.2rem;
+  opacity:0;animation:fadeUp .5s 1.3s ease forwards;
+}
+.imsg strong{color:var(--glow);font-family:'Share Tech Mono',monospace;font-size:.9em;}
+.lgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:.55rem;margin-bottom:1.4rem;
+  opacity:0;animation:fadeUp .5s 1.5s ease forwards;}
+.li2{
+  background:rgba(0,255,65,.03);border:1px solid var(--border);
+  padding:.65rem 1rem;display:flex;align-items:center;gap:.55rem;
+  font-size:.78rem;letter-spacing:1px;color:var(--text-dim);transition:all .2s;
+}
+.li2:hover{border-color:var(--glow);color:var(--glow);background:var(--glow-dim);}
+.li2 .lic{color:var(--amber);}
+
+.btnL{
+  background:transparent;border:2px solid var(--glow);color:var(--glow);
+  font-family:'Orbitron',sans-serif;font-weight:600;font-size:.9rem;
+  letter-spacing:4px;padding:.95rem 2.4rem;cursor:crosshair;text-transform:uppercase;
+  transition:all .3s;position:relative;overflow:hidden;
+  opacity:0;animation:fadeUp .5s 1.7s ease forwards;
+}
+.btnL::before{content:'';position:absolute;inset:0;background:var(--glow);
+  transform:scaleX(0);transform-origin:left;transition:transform .3s;z-index:-1;}
+.btnL:hover{color:var(--g0);box-shadow:0 0 28px var(--glow),0 0 55px rgba(0,255,65,.25);}
+.btnL:hover::before{transform:scaleX(1);}
+
+/* ══ GAME SCREEN ══ */
+#game-screen{background:var(--g0);animation:flicker 14s infinite;}
+
+/* HUD BAR */
+.hbar{
+  background:linear-gradient(90deg,rgba(0,28,0,.97),rgba(0,18,0,.97));
+  border-bottom:1px solid var(--border);height:54px;
+  display:flex;align-items:stretch;position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 22px rgba(0,0,0,.8);
+}
+.hseg{
+  display:flex;align-items:center;padding:0 .9rem;gap:.4rem;
+  border-right:1px solid var(--border);
+}
+.hlbl{font-size:.58rem;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;display:block;line-height:1;}
+.hval{font-family:'Orbitron',sans-serif;font-size:.75rem;color:var(--glow);line-height:1.2;}
+.htitle{flex:1;justify-content:center;border-right:none;}
+.htxt{font-family:'Orbitron',sans-serif;font-weight:800;font-size:.82rem;letter-spacing:4px;
+  color:var(--glow);text-shadow:0 0 12px var(--glow);}
+
+.hlocks{display:flex;align-items:center;gap:.35rem;padding:0 .9rem;}
+.hlock{
+  width:28px;height:28px;border:2px solid var(--border);border-radius:3px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.72rem;color:var(--text-dim);transition:all .4s;
+}
+.hlock.ok{border-color:var(--glow);background:var(--glow-dim);color:var(--glow);
+  box-shadow:0 0 8px var(--glow);}
+
+#hclock{font-family:'Orbitron',sans-serif;font-size:.88rem;color:var(--amber);letter-spacing:2px;}
+
+.abar{
+  display:none;position:fixed;top:54px;left:0;right:0;
+  padding:.38rem;text-align:center;font-size:.72rem;letter-spacing:3px;z-index:99;
+  animation:blink .5s step-end 6;
+}
+.abar.show{display:block;background:rgba(255,34,0,.12);border-bottom:1px solid var(--red-alert);color:var(--red-alert);}
+.abar.ok{background:rgba(0,255,65,.08);border-bottom:1px solid var(--glow);color:var(--glow);}
+
+/* LAYOUT */
+.gbody{display:grid;grid-template-columns:255px 1fr;flex:1;height:calc(100vh - 54px);overflow:hidden;}
+
+/* LEFT */
+.lpanel{
+  background:linear-gradient(180deg,rgba(0,12,0,.97) 0%,rgba(0,6,0,1) 100%);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+
+/* RADAR */
+.radarw{padding:.9rem;border-bottom:1px solid var(--border);display:flex;flex-direction:column;align-items:center;}
+.rlbl{font-size:.58rem;letter-spacing:4px;color:var(--text-dim);text-transform:uppercase;margin-bottom:.55rem;align-self:flex-start;}
+.radar{
+  width:110px;height:110px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,45,0,.85) 0%,rgba(0,8,0,.95) 100%);
+  border:2px solid rgba(0,255,65,.28);position:relative;overflow:hidden;
+}
+.radar::after{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  background:
+    radial-gradient(circle at center,transparent 27%,rgba(0,255,65,.07) 28%,transparent 29%),
+    radial-gradient(circle at center,transparent 53%,rgba(0,255,65,.07) 54%,transparent 55%),
+    radial-gradient(circle at center,transparent 79%,rgba(0,255,65,.07) 80%,transparent 81%);
+}
+.rcross{
+  position:absolute;inset:0;border-radius:50%;
+  background:
+    linear-gradient(90deg,transparent 49.4%,rgba(0,255,65,.18) 49.4%,rgba(0,255,65,.18) 50.6%,transparent 50.6%),
+    linear-gradient(0deg,transparent 49.4%,rgba(0,255,65,.18) 49.4%,rgba(0,255,65,.18) 50.6%,transparent 50.6%);
+}
+.rsweep{
+  position:absolute;top:50%;left:50%;width:50%;height:2px;margin-top:-1px;
+  transform-origin:left center;animation:sweep 3s linear infinite;
+  background:linear-gradient(90deg,transparent,var(--glow));
+  filter:drop-shadow(0 0 4px var(--glow));
+}
+.blip{position:absolute;width:5px;height:5px;border-radius:50%;
+  background:var(--glow);box-shadow:0 0 6px var(--glow);
+  animation:bf 3s ease-in-out infinite;}
+.blip:nth-child(1){top:30%;left:65%;animation-delay:.5s;}
+.blip:nth-child(2){top:55%;left:25%;animation-delay:1.2s;}
+.blip:nth-child(3){top:70%;left:60%;animation-delay:2s;}
+.blip:nth-child(4){top:22%;left:42%;animation-delay:.9s;}
+@keyframes bf{0%,100%{opacity:.2;transform:scale(1)}50%{opacity:1;transform:scale(1.5)}}
+
+/* NAV */
+.navsec{padding:.7rem;border-bottom:1px solid var(--border);flex:1;overflow-y:auto;}
+.nslbl{font-size:.58rem;letter-spacing:4px;color:var(--text-dim);text-transform:uppercase;
+  padding:0 .3rem .45rem;border-bottom:1px solid rgba(0,255,65,.1);margin-bottom:.45rem;}
+.nbtn{
+  display:flex;align-items:center;gap:.5rem;width:100%;
+  background:transparent;border:1px solid transparent;
+  color:var(--text-dim);font-family:'Share Tech Mono',monospace;
+  font-size:.75rem;letter-spacing:1px;padding:.55rem .7rem;
+  cursor:crosshair;text-align:left;transition:all .2s;
+  margin-bottom:.2rem;text-transform:uppercase;
+}
+.nbtn:hover,.nbtn.na{border-color:var(--border);background:var(--glow-dim);color:var(--glow);}
+.nbtn .ni{font-size:.95rem;min-width:1.1rem;}
+.nbtn .ns{margin-left:auto;font-size:.58rem;letter-spacing:2px;color:var(--text-dim);}
+.nbtn.sn .ns{color:var(--glow);}
+.nbtn.sn{opacity:.72;}
+
+/* STATUS */
+.sbar{padding:.7rem;background:rgba(0,255,65,.025);border-top:1px solid var(--border);}
+.srow{display:flex;justify-content:space-between;margin-bottom:.22rem;}
+.sk{font-size:.6rem;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;}
+.sv{font-size:.6rem;letter-spacing:1px;color:var(--glow);}
+.pgout{background:rgba(0,255,65,.07);border:1px solid var(--border);height:5px;margin-top:.35rem;overflow:hidden;}
+.pgin{height:100%;background:linear-gradient(90deg,#002200,var(--glow));
+  box-shadow:0 0 8px var(--glow);transition:width .6s ease;width:0%;}
+
+/* MAIN */
+.mcontent{
+  overflow-y:auto;padding:1.5rem 2rem;
+  background-image:
+    linear-gradient(rgba(0,255,65,.018) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,255,65,.018) 1px,transparent 1px),
+    linear-gradient(180deg,rgba(0,12,0,.72) 0%,rgba(0,4,0,.85) 100%);
+  background-size:60px 60px,60px 60px,auto;
+}
+.ppage{display:none;}
+.ppage.active{display:block;animation:fadeUp .35s ease both;}
+
+/* SECTION HDR */
+.shdr{margin-bottom:1.4rem;border-bottom:1px solid var(--border);padding-bottom:.75rem;}
+.sey{font-size:.62rem;letter-spacing:5px;color:var(--amber);text-transform:uppercase;margin-bottom:.25rem;}
+.stit{font-family:'Orbitron',sans-serif;font-size:1.25rem;font-weight:600;color:var(--glow);
+  text-shadow:0 0 14px rgba(0,255,65,.38);letter-spacing:2px;}
+.ssub{font-size:.68rem;color:var(--text-dim);letter-spacing:3px;margin-top:.18rem;}
+
+/* SOURCE CARD */
+.scard{
+  background:linear-gradient(135deg,rgba(0,22,0,.62),rgba(0,12,0,.82));
+  border:1px solid var(--border);border-left:3px solid var(--glow);
+  padding:1.1rem 1.3rem;margin-bottom:1.1rem;position:relative;
+  animation:slideIn .4s ease both;
+}
+.scard::before{content:'';position:absolute;top:0;right:0;
+  border-top:14px solid rgba(0,255,65,.12);border-left:14px solid transparent;}
+.styp{font-size:.58rem;letter-spacing:4px;color:var(--amber);text-transform:uppercase;
+  margin-bottom:.38rem;display:flex;align-items:center;gap:.4rem;}
+.styp::before{content:'';width:5px;height:5px;background:var(--amber);
+  display:inline-block;box-shadow:0 0 4px var(--amber);}
+.stitl{font-family:'Special Elite',cursive;font-size:.98rem;color:var(--glow);margin-bottom:.6rem;letter-spacing:1px;}
+.sbody{font-family:'Crimson Text',serif;font-size:1.04rem;line-height:1.88;
+  color:var(--text-main);font-style:italic;}
+.sbody em{font-style:normal;color:var(--glow2);font-weight:600;text-shadow:0 0 5px rgba(57,255,20,.28);}
+.sattr{margin-top:.7rem;font-size:.65rem;letter-spacing:2px;color:var(--text-dim);
+  border-top:1px solid rgba(0,255,65,.1);padding-top:.45rem;}
+
+/* CLUE BOX */
+.cluebox{
+  background:rgba(255,183,0,.045);
+  border:1px solid rgba(255,183,0,.28);border-left:3px solid var(--amber);
+  padding:.95rem 1.1rem;margin:1.1rem 0;font-size:.93rem;line-height:1.82;
+  color:var(--text-main);position:relative;
+}
+.cluebox::before{content:'// OBJECTIVE';display:block;font-size:.58rem;letter-spacing:4px;
+  color:var(--amber);margin-bottom:.45rem;}
+.cluebox strong{color:var(--glow);display:block;margin-bottom:.28rem;font-size:.97rem;}
+
+/* LOCK */
+.lblock{
+  background:rgba(0,0,0,.52);border:1px solid rgba(0,255,65,.28);
+  padding:1.3rem;margin-top:1.3rem;position:relative;
+}
+.lblock::before{content:'[ SECURE LOCK INTERFACE ]';position:absolute;top:-.48rem;left:.9rem;
+  background:var(--g0);padding:0 .45rem;font-size:.58rem;letter-spacing:3px;
+  color:var(--glow);text-transform:uppercase;}
+.lrow{display:flex;gap:.55rem;flex-wrap:wrap;}
+.linput{
+  flex:1;min-width:190px;
+  background:rgba(0,255,65,.035);border:1px solid rgba(0,255,65,.28);
+  border-bottom:2px solid var(--glow);color:var(--glow);
+  font-family:'Share Tech Mono',monospace;font-size:.98rem;
+  padding:.68rem 1rem;letter-spacing:3px;text-transform:uppercase;
+  outline:none;transition:all .2s;caret-color:var(--glow);
+}
+.linput:focus{border-color:var(--glow);background:rgba(0,255,65,.07);
+  box-shadow:0 0 12px rgba(0,255,65,.13),inset 0 0 8px rgba(0,255,65,.04);}
+.linput::placeholder{color:rgba(0,255,65,.18);letter-spacing:2px;}
+.bdecode{
+  background:transparent;border:2px solid var(--glow);color:var(--glow);
+  font-family:'Orbitron',sans-serif;font-size:.7rem;font-weight:600;
+  letter-spacing:3px;padding:.68rem 1.1rem;cursor:crosshair;
+  text-transform:uppercase;transition:all .25s;white-space:nowrap;position:relative;overflow:hidden;
+}
+.bdecode::before{content:'';position:absolute;inset:0;background:var(--glow);
+  transform:scaleX(0);transform-origin:left;transition:transform .25s;z-index:-1;}
+.bdecode:hover{color:var(--g0);box-shadow:0 0 14px var(--glow);}
+.bdecode:hover::before{transform:scaleX(1);}
+.lfb{margin-top:.65rem;font-size:.78rem;letter-spacing:2px;min-height:1rem;}
+.lfb.err{color:var(--red-alert);text-shadow:0 0 7px var(--red-alert);}
+.lfb.ok{color:var(--glow);text-shadow:0 0 7px var(--glow);}
+.schip{
+  display:inline-flex;align-items:center;gap:.35rem;
+  background:rgba(0,255,65,.07);border:1px solid rgba(0,255,65,.38);
+  color:var(--glow);font-size:.68rem;letter-spacing:3px;
+  padding:.32rem .75rem;margin-top:.55rem;text-shadow:0 0 5px var(--glow);
+}
+
+/* HINT */
+.hintbtn{
+  background:transparent;border:1px dashed rgba(0,255,65,.18);
+  color:var(--text-dim);font-family:'Share Tech Mono',monospace;
+  font-size:.68rem;letter-spacing:2px;padding:.32rem .75rem;
+  cursor:crosshair;text-transform:uppercase;margin-top:.65rem;transition:all .2s;
+}
+.hintbtn:hover{border-color:var(--glow);color:var(--glow);}
+.hintpnl{
+  display:none;background:rgba(0,18,0,.6);
+  border:1px dashed rgba(0,255,65,.18);
+  padding:.72rem .95rem;margin-top:.38rem;
+  font-size:.8rem;color:var(--text-dim);line-height:1.7;
+}
+.hintpnl.vis{display:block;}
+.hintpnl::before{content:'>> HINT: ';color:var(--glow);}
+
+/* WELCOME STAT GRID */
+.sgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin-top:.9rem;}
+.scard2{
+  background:rgba(0,255,65,.025);border:1px solid var(--border);
+  padding:.9rem;text-align:center;transition:all .2s;
+}
+.scard2:hover{border-color:var(--glow);background:var(--glow-dim);}
+.sico{font-size:1.7rem;margin-bottom:.25rem;}
+.stitle2{font-family:'Orbitron',sans-serif;font-size:.68rem;letter-spacing:2px;color:var(--glow);}
+.ssub2{font-size:.62rem;color:var(--text-dim);margin-top:.18rem;letter-spacing:1px;}
+
+/* ══ SUCCESS ══ */
+#success-screen{
+  background:var(--g0);align-items:center;justify-content:center;
+  padding:2rem 1rem;position:relative;overflow:hidden;
+  animation:flicker 6s infinite;
+}
+.confwrap{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.cp{position:absolute;width:6px;height:6px;opacity:0;animation:cffall 4s linear forwards;}
+.sw{max-width:780px;width:100%;text-align:center;position:relative;z-index:1;animation:fadeUp .6s ease;}
+.wemb{font-size:3.8rem;animation:pulse-glow 2s ease-in-out infinite;display:block;margin-bottom:.45rem;}
+.wtit{
+  font-family:'Orbitron',sans-serif;font-weight:800;
+  font-size:clamp(2rem,6vw,4rem);color:var(--glow);letter-spacing:4px;
+  text-shadow:0 0 30px var(--glow),0 0 60px rgba(0,255,65,.3);margin-bottom:.3rem;
+}
+.wsub{font-size:.68rem;letter-spacing:6px;color:var(--text-dim);margin-bottom:1.8rem;text-transform:uppercase;}
+.wbody{
+  background:linear-gradient(135deg,rgba(0,28,0,.7),rgba(0,14,0,.82));
+  border:1px solid rgba(0,255,65,.28);border-left:3px solid var(--glow);
+  padding:1.3rem 1.6rem;text-align:left;
+  font-family:'Crimson Text',serif;font-size:1.08rem;line-height:1.9;
+  color:var(--text-main);margin-bottom:1.4rem;
+}
+.wbody strong{color:var(--glow);font-family:'Share Tech Mono',monospace;font-size:.9em;}
+.agrid{display:grid;grid-template-columns:repeat(2,1fr);gap:.55rem;margin-bottom:1.4rem;text-align:left;}
+.ac{background:rgba(0,255,65,.04);border:1px solid rgba(0,255,65,.2);padding:.85rem .95rem;}
+.al{font-size:.58rem;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;margin-bottom:.18rem;}
+.av{font-family:'Orbitron',sans-serif;font-size:.78rem;color:var(--glow);letter-spacing:1px;}
+.lrnbox{
+  background:rgba(0,28,0,.5);border:1px solid var(--border);
+  padding:1.1rem 1.4rem;text-align:left;margin-bottom:1.4rem;
+}
+.lrnbox .lh{font-size:.62rem;letter-spacing:4px;color:var(--amber);text-transform:uppercase;margin-bottom:.55rem;}
+.lrnbox p{font-family:'Crimson Text',serif;font-size:1rem;line-height:1.82;color:var(--text-main);}
+.lrnbox em{color:var(--glow);font-style:normal;}
+
+@media(max-width:680px){
+  .gbody{grid-template-columns:1fr;}
+  .lpanel{max-height:200px;flex-direction:row;overflow-x:auto;}
+  .radarw{display:none;}
+  .sgrid,.agrid,.lgrid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ INTRO ══ -->
+<div id="intro-screen" class="screen active">
+  <div class="grid-bg"></div>
+  <div class="iw">
+    <div class="bx">
+      <div class="br2"></div>
+      <div class="bl">// SYSTEM BOOT... TACTICAL INTERFACE v1.9.17</div>
+      <div class="bl">// LOCATION: BUNKER 17 — SECTOR 4 — SOMME, FRANCE</div>
+      <div class="bl">// SECURITY CLEARANCE: LEVEL ALPHA — CONFIRMED</div>
+      <div class="bl">// WARNING: ENEMY ADVANCE IMMINENT — T-MINUS 04:00:00</div>
+    </div>
+    <div class="ititle">OPERATION:<br>NO MAN'S LAND</div>
+    <div class="icode">WWI DIGITAL BREAKOUT // WARFARE &amp; MILITARY TECHNOLOGY</div>
+    <div class="imsg">
+      You are <strong>CORPORAL J. ELLIS</strong>, signals officer — trapped in a destroyed command post near the Somme, 1917. Enemy forces have seized your division's tactical codes. Four security compartments hold the <strong>EMERGENCY EXTRACTION PROTOCOL</strong>.<br><br>
+      Each lock requires a code drawn from <strong>real primary source evidence</strong> — soldier diaries, war office directives, military field orders, and RFC combat reports. Study every document. History is your only weapon.
+    </div>
+    <div class="lgrid">
+      <div class="li2"><span class="lic">☁</span>LOCK 1 — GAS ATTACK ORDER</div>
+      <div class="li2"><span class="lic">⚙</span>LOCK 2 — TANK DIRECTIVE</div>
+      <div class="li2"><span class="lic">🗺</span>LOCK 3 — TRENCH SYSTEM MAP</div>
+      <div class="li2"><span class="lic">✈</span>LOCK 4 — AERIAL CIPHER</div>
+    </div>
+    <button class="btnL" onclick="startGame()">▶ INITIATE MISSION</button>
+  </div>
+</div>
+
+<!-- ══ GAME SCREEN ══ -->
+<div id="game-screen" class="screen">
+
+  <!-- HUD BAR -->
+  <div class="hbar">
+    <div class="hseg"><span class="hlbl">STATUS</span><span class="hval" id="hstatus">ACTIVE</span></div>
+    <div class="hseg"><span class="hlbl">SECTOR</span><span class="hval">SOMME-7</span></div>
+    <div class="hseg"><span class="hlbl">YEAR</span><span class="hval">1917</span></div>
+    <div class="hseg htitle"><span class="htxt">// OPERATION: NO MAN'S LAND //</span></div>
+    <div class="hseg">
+      <span class="hlbl">LOCKS</span>
+      <div class="hlocks">
+        <div class="hlock" id="hl1">1</div>
+        <div class="hlock" id="hl2">2</div>
+        <div class="hlock" id="hl3">3</div>
+        <div class="hlock" id="hl4">4</div>
+      </div>
+    </div>
+    <div class="hseg" style="border-right:none;"><span class="hlbl">TIME</span><span id="hclock">--:--:--</span></div>
+  </div>
+
+  <div class="abar" id="abar"></div>
+
+  <div class="gbody">
+    <!-- LEFT PANEL -->
+    <div class="lpanel">
+      <!-- RADAR -->
+      <div class="radarw">
+        <div class="rlbl">// SECTOR RADAR</div>
+        <div class="radar">
+          <div class="rcross"></div>
+          <div class="rsweep"></div>
+          <div class="blip"></div><div class="blip"></div>
+          <div class="blip"></div><div class="blip"></div>
+        </div>
+      </div>
+      <!-- NAV -->
+      <div class="navsec">
+        <div class="nslbl">// Compartments</div>
+        <button class="nbtn na" id="nb0" onclick="showPanel('welcome',this)"><span class="ni">🏠</span>Command Post<span class="ns">BASE</span></button>
+        <button class="nbtn" id="nb1" onclick="showPanel('lock1',this)"><span class="ni">☁</span>Gas Attack<span class="ns" id="ns1">LOCKED</span></button>
+        <button class="nbtn" id="nb2" onclick="showPanel('lock2',this)"><span class="ni">⚙</span>Tank Directive<span class="ns" id="ns2">LOCKED</span></button>
+        <button class="nbtn" id="nb3" onclick="showPanel('lock3',this)"><span class="ni">🗺</span>Trench Map<span class="ns" id="ns3">LOCKED</span></button>
+        <button class="nbtn" id="nb4" onclick="showPanel('lock4',this)"><span class="ni">✈</span>Aerial Cipher<span class="ns" id="ns4">LOCKED</span></button>
+      </div>
+      <!-- STATUS -->
+      <div class="sbar">
+        <div class="srow"><span class="sk">EXTRACTION</span><span class="sv" id="stprog">0 / 4</span></div>
+        <div class="srow"><span class="sk">PROTOCOL</span><span class="sv" id="stproto">STANDBY</span></div>
+        <div class="pgout"><div class="pgin" id="pgbar"></div></div>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="mcontent">
+
+      <!-- WELCOME -->
+      <div class="ppage active" id="panel-welcome">
+        <div class="shdr">
+          <div class="sey">// TACTICAL OVERVIEW</div>
+          <div class="stit">COMMAND POST — BUNKER 17</div>
+          <div class="ssub">📍 RIVER SOMME · FRANCE · 1917</div>
+        </div>
+        <div class="scard">
+          <div class="styp">SITUATION REPORT</div>
+          <div class="stitl">Field Dispatch — Urgent</div>
+          <div class="sbody">The command post has been partially destroyed by shellfire. Four security compartments remain intact, each sealed with a coded lock. Your orders: extract all four codes and transmit the Extraction Protocol before enemy forces advance at 0600 hours.<br><br>
+          Every compartment contains <em>primary source documents</em> — real artifacts from the front lines of the Great War. Soldier diaries. War office directives. Official combat reports. <em>The answers are inside those documents.</em></div>
+        </div>
+        <div class="cluebox">
+          <strong>▶ HOW TO PLAY</strong>
+          Select a compartment from the left panel. Analyse the primary sources carefully. When you identify the correct code, type it into the lock interface and hit DECODE. All four locks must be cracked to trigger the Extraction Protocol.
+        </div>
+        <div class="sgrid">
+          <div class="scard2"><div class="sico">☁</div><div class="stitle2">GAS WARFARE</div><div class="ssub2">Chemical Attacks · 1915</div></div>
+          <div class="scard2"><div class="sico">⚙</div><div class="stitle2">TANK WARFARE</div><div class="ssub2">Armoured Vehicles · 1916</div></div>
+          <div class="scard2"><div class="sico">🗺</div><div class="stitle2">TRENCH SYSTEMS</div><div class="ssub2">Front &amp; Reserve Lines</div></div>
+          <div class="scard2"><div class="sico">✈</div><div class="stitle2">AERIAL WARFARE</div><div class="ssub2">RFC Dogfights · 1917</div></div>
+        </div>
+      </div>
+
+      <!-- LOCK 1 -->
+      <div class="ppage" id="panel-lock1">
+        <div class="shdr">
+          <div class="sey">// COMPARTMENT 1 · PRIMARY SOURCES</div>
+          <div class="stit">THE GAS ATTACK ORDER</div>
+          <div class="ssub">☁ CHEMICAL WARFARE · YPRES · 22 APRIL 1915</div>
+        </div>
+        <div class="scard">
+          <div class="styp">SOLDIER DIARY · PRIMARY SOURCE</div>
+          <div class="stitl">Private William Hay, 1st Canadian Division — Ypres, April 22, 1915</div>
+          <div class="sbody">"...About five o'clock in the evening, a strange <em>yellow-green cloud</em> appeared along the German line, rolling toward us slowly. It burned the throat and made your eyes stream with tears. Men fell to the ground gasping. We had no protection — none had ever been issued. The order came from the medical sergeant: urinate on your cloth and press it to your face. It was all we had.<br><br>
+          The date — <em>22 April 1915</em> — will live in infamy as the first large-scale use of poison gas in warfare. Nearly <em>six thousand</em> cylinders of chlorine were released by the Germans along a <em>four-mile</em> front at Ypres. The cloud stretched <em>six kilometres</em> wide."</div>
+          <div class="sattr">— Diary of Pte. William Hay, Canadian Expeditionary Force Archives, 1915 [PRIMARY SOURCE]</div>
+        </div>
+        <div class="scard">
+          <div class="styp">WAR OFFICE DIRECTIVE · PRIMARY SOURCE</div>
+          <div class="stitl">Gas Directive No. 7 — Anti-Gas Precautions, November 1915</div>
+          <div class="sbody">"All troops are required to carry the Phenate Helmet at all times in forward positions. The helmet was standardized after the Second Battle of Ypres, where German forces deployed <em>168 tonnes</em> of chlorine gas. Troops must note: the gas alarm signal in all British sectors is <em>six short rings</em> followed by a long ring. Protective helmets must be donned within <em>eight seconds</em> of the alarm sounding..."</div>
+          <div class="sattr">— British War Office, Gas Directive No. 7, November 1915 [PRIMARY SOURCE]</div>
+        </div>
+        <div class="cluebox">
+          <strong>🔍 IDENTIFY THE CODE</strong>
+          Using Private Hay's diary as your evidence:<br><br>
+          <strong>How many cylinders of gas were released at Ypres?</strong><br>
+          Write the number as words (e.g. "three thousand"). Case does not matter.
+        </div>
+        <button class="hintbtn" onclick="th('hh1')">⚑ REQUEST HINT</button>
+        <div class="hintpnl" id="hh1">Re-read Private Hay's diary. He specifically states how many cylinders the Germans released. Write that number spelled out as words.</div>
+        <div class="lblock" id="lb1">
+          <div class="lrow">
+            <input class="linput" id="in1" type="text" placeholder="ENTER CODE..." maxlength="30">
+            <button class="bdecode" onclick="chk(1,'SIX THOUSAND','in1','fb1','hl1','nb1','ns1','lb1')">◉ DECODE</button>
+          </div>
+          <div class="lfb" id="fb1"></div>
+        </div>
+      </div>
+
+      <!-- LOCK 2 -->
+      <div class="ppage" id="panel-lock2">
+        <div class="shdr">
+          <div class="sey">// COMPARTMENT 2 · PRIMARY SOURCES</div>
+          <div class="stit">THE TANK DIRECTIVE</div>
+          <div class="ssub">⚙ ARMOURED WARFARE · FLERS-COURCELETTE · 1916</div>
+        </div>
+        <div class="scard">
+          <div class="styp">OFFICER DIARY · TANK CORPS · PRIMARY SOURCE</div>
+          <div class="stitl">Lt. Basil Henriques, Tank Corps — Battle of Flers-Courcelette, Sept. 15, 1916</div>
+          <div class="sbody">"We moved before dawn through the mud — a terrifying, roaring machine unlike anything that had existed on a battlefield. I commanded <em>D17</em>, one of the 'Mark I' tanks. The German infantry simply ran. They had never seen such a beast.<br><br>
+          Our crew of <em>eight</em> men crawled at no more than <em>four miles per hour</em>, but the psychological effect was devastating. Of the 49 tanks sent forward, only <em>32</em> actually reached their starting positions. The rest were lost to mechanical failure."</div>
+          <div class="sattr">— Diary of Lt. Basil Henriques, Tank Corps, Imperial War Museum, London [PRIMARY SOURCE]</div>
+        </div>
+        <div class="scard">
+          <div class="styp">WAR OFFICE MEMORANDUM · LANDSHIPS COMMITTEE · PRIMARY SOURCE</div>
+          <div class="stitl">Technical Specifications — His Majesty's Land Ship, June 1915</div>
+          <div class="sbody">"The design submitted by William Foster &amp; Co. has been approved for production under the codename <em>'Water Carrier'</em> — chosen to deceive enemy intelligence intercepting supply manifests. Upon protest by committee members who objected to the initials 'WC', the vehicle was instead renamed <em>'Tank'</em> — a reference to the steel water storage containers the vehicle resembled when crated for transport.<br><br>
+          The Mark I weighs <em>28 tons</em>, carries <em>two 6-pounder guns</em> and <em>four Hotchkiss machine guns</em>, and requires a crew of <em>eight</em>. Maximum armour: <em>12mm</em>."</div>
+          <div class="sattr">— War Office Landships Committee Memorandum, June 1915, National Archives UK [PRIMARY SOURCE]</div>
+        </div>
+        <div class="cluebox">
+          <strong>🔍 IDENTIFY THE CODE</strong>
+          The War Office Memorandum reveals the tank's <strong>secret original codename</strong>, chosen to disguise its nature from enemy intelligence.<br><br>
+          <strong>What was the tank's original codename before 'Tank'?</strong>
+        </div>
+        <button class="hintbtn" onclick="th('hh2')">⚑ REQUEST HINT</button>
+        <div class="hintpnl" id="hh2">The War Office Memorandum explicitly names the codename in quotation marks. It's two words describing a container for liquid — chosen to deceive enemy supply manifest readers.</div>
+        <div class="lblock" id="lb2">
+          <div class="lrow">
+            <input class="linput" id="in2" type="text" placeholder="ENTER CODE..." maxlength="30">
+            <button class="bdecode" onclick="chk(2,'WATER CARRIER','in2','fb2','hl2','nb2','ns2','lb2')">◉ DECODE</button>
+          </div>
+          <div class="lfb" id="fb2"></div>
+        </div>
+      </div>
+
+      <!-- LOCK 3 -->
+      <div class="ppage" id="panel-lock3">
+        <div class="shdr">
+          <div class="sey">// COMPARTMENT 3 · PRIMARY SOURCES</div>
+          <div class="stit">THE TRENCH SYSTEM MAP</div>
+          <div class="ssub">🗺 TRENCH WARFARE · SOMME · 1916–1917</div>
+        </div>
+        <div class="scard">
+          <div class="styp">FIELD NOTEBOOK · ROYAL ENGINEERS · PRIMARY SOURCE</div>
+          <div class="stitl">Sgt. Thomas McBride, RE — Trench Construction Orders, Somme, August 1916</div>
+          <div class="sbody">"The standard British trench system runs in three parallel lines: the <em>Front Line</em>, the <em>Support Line</em>, and the <em>Reserve Line</em>. Connecting them are diagonal 'communication trenches' cut at angles to prevent enfilading fire.<br><br>
+          The Front Line follows a <em>zigzag traverse</em> pattern — each straight section not to exceed <em>ten yards</em>. Our section at Grid Reference <em>SOMME-7</em> was ordered to dig to a depth of <em>six feet</em>, with a firestep cut at <em>two feet</em> from the bottom..."</div>
+          <div class="sattr">— Field Notebook of Sgt. Thomas McBride, RE, Liddle Collection, University of Leeds [PRIMARY SOURCE]</div>
+        </div>
+        <div class="scard">
+          <div class="styp">GHQ OFFICIAL MANUAL · PRIMARY SOURCE</div>
+          <div class="stitl">"Notes on Trench Warfare" — British GHQ, 1917</div>
+          <div class="sbody">"The term <em>'No Man's Land'</em> refers to the unoccupied ground between opposing front-line trenches — average width varied from <em>50 to 250 metres</em>. The Front Line was also termed the <em>'Fire Trench.'</em><br><br>
+          The innermost defensive position was the <em>Reserve Line</em>, located approximately <em>four hundred yards</em> behind the front. The Reserve Line was never to be abandoned without explicit written orders from a general officer..."</div>
+          <div class="sattr">— "Notes on Trench Warfare," British GHQ, 1917. National Archives WO 158/311 [PRIMARY SOURCE]</div>
+        </div>
+        <div class="cluebox">
+          <strong>🔍 IDENTIFY THE CODE</strong>
+          Cross-reference both primary sources:<br><br>
+          1. From Sgt. McBride's notebook — the <strong>depth</strong> trenches were ordered dug<br>
+          2. From the GHQ Manual — the <strong>name</strong> of the innermost defensive line<br><br>
+          Combine in order: [DEPTH] [LINE NAME]&nbsp;&nbsp;eg. FIVE FEET FRONT LINE
+        </div>
+        <button class="hintbtn" onclick="th('hh3')">⚑ REQUEST HINT</button>
+        <div class="hintpnl" id="hh3">McBride: "ordered to dig to a depth of SIX FEET." GHQ Manual: the innermost position is the "RESERVE LINE." Combine them.</div>
+        <div class="lblock" id="lb3">
+          <div class="lrow">
+            <input class="linput" id="in3" type="text" placeholder="ENTER CODE..." maxlength="40">
+            <button class="bdecode" onclick="chk(3,'SIX FEET RESERVE LINE','in3','fb3','hl3','nb3','ns3','lb3')">◉ DECODE</button>
+          </div>
+          <div class="lfb" id="fb3"></div>
+        </div>
+      </div>
+
+      <!-- LOCK 4 -->
+      <div class="ppage" id="panel-lock4">
+        <div class="shdr">
+          <div class="sey">// COMPARTMENT 4 · FINAL LOCK · PRIMARY SOURCES</div>
+          <div class="stit">THE AERIAL CIPHER</div>
+          <div class="ssub">✈ AERIAL WARFARE · RFC · 1917–1918</div>
+        </div>
+        <div class="scard">
+          <div class="styp">RFC COMBAT REPORT · PRIMARY SOURCE</div>
+          <div class="stitl">Capt. Arthur Roy Brown, No. 209 Squadron RFC — April 21, 1918</div>
+          <div class="sbody">"...At approximately <em>10:45 hours</em> I observed a red Fokker triplane diving on Lt. May's machine at low altitude over the Somme. I immediately dived and opened fire. The enemy aircraft crashed near <em>Vaux-sur-Somme</em>.<br><br>
+          The pilot was positively identified as <em>Manfred von Richthofen</em>, holder of the <em>Pour le Mérite</em> and credited with <em>80 aerial victories</em> — the highest-scoring fighter ace of any nation in the war. His aircraft, painted <em>entirely red</em>, was known to Allied pilots as the <em>'Red Baron.'</em>"</div>
+          <div class="sattr">— Combat Report, Capt. A. Roy Brown, No. 209 Sqn RFC, April 21 1918. National Archives AIR 1/2388 [PRIMARY SOURCE]</div>
+        </div>
+        <div class="scard">
+          <div class="styp">RFC COMMUNIQUÉ No. 83 · PRIMARY SOURCE</div>
+          <div class="stitl">Aerial Reconnaissance Policy Directive — HQ Royal Flying Corps, April 1917</div>
+          <div class="sbody">"Reconnaissance aircraft are not to cross enemy lines below <em>5,000 feet</em> without fighter escort. Since 1916, RFC cameras have produced over <em>430,000 photographs</em> of enemy positions, proving decisive at Arras and Vimy Ridge.<br><br>
+          The observer must call out enemy positions using the clock system: enemy at <em>three o'clock</em> means target to the right of the aircraft heading. All reports to be filed on <em>RFC Combat Report Form W3348</em> within two hours of landing..."</div>
+          <div class="sattr">— RFC Communiqué No. 83, April 1917, Royal Flying Corps HQ [PRIMARY SOURCE]</div>
+        </div>
+        <div class="scard" style="border-left-color:var(--amber);">
+          <div class="styp" style="color:var(--red-alert);">⚠ INTERCEPTED ENEMY CIPHER — PARTIAL DECRYPT</div>
+          <div class="stitl" style="color:var(--amber);">Recovered from Bunker Safe — Final Lock Sequence</div>
+          <div class="sbody" style="font-family:'Share Tech Mono',monospace;font-size:.83rem;line-height:2.1;color:var(--amber);">
+            TARGET IDENTIFICATION PROTOCOL:<br>
+            ▸ ACE PILOT SURNAME &nbsp;: _ _ _ _ _ _ _ _ _ _<br>
+            ▸ CONFIRMED VICTORIES : _ _ (digits)<br>
+            ▸ AIRCRAFT COLOUR &nbsp;&nbsp;&nbsp;: _ _ _<br><br>
+            <span style="color:var(--text-dim);">FORMAT: [SURNAME]-[VICTORIES]-[COLOUR]<br>
+            EXAMPLE: SMITH-45-BLUE &nbsp;← NOT THE ANSWER</span>
+          </div>
+        </div>
+        <div class="cluebox">
+          <strong>🔍 IDENTIFY THE FINAL CODE</strong>
+          From Captain Brown's combat report, assemble three pieces:<br><br>
+          1. The enemy ace's <strong>SURNAME</strong><br>
+          2. His <strong>AERIAL VICTORIES</strong> (digits)<br>
+          3. The <strong>COLOUR</strong> of his aircraft<br><br>
+          Combine with hyphens. Uppercase. This is your final extraction code.
+        </div>
+        <button class="hintbtn" onclick="th('hh4')">⚑ REQUEST HINT</button>
+        <div class="hintpnl" id="hh4">From Brown's report: pilot identified as "Manfred von RICHTHOFEN" (surname only), credited with "80 aerial victories," aircraft painted "entirely RED." So: RICHTHOFEN-80-RED</div>
+        <div class="lblock" id="lb4">
+          <div class="lrow">
+            <input class="linput" id="in4" type="text" placeholder="SURNAME-##-COLOUR" maxlength="30">
+            <button class="bdecode" onclick="chk(4,'RICHTHOFEN-80-RED','in4','fb4','hl4','nb4','ns4','lb4')">◉ DECODE</button>
+          </div>
+          <div class="lfb" id="fb4"></div>
+        </div>
+      </div>
+
+    </div><!-- /mcontent -->
+  </div><!-- /gbody -->
+</div><!-- /game-screen -->
+
+<!-- ══ SUCCESS ══ -->
+<div id="success-screen" class="screen">
+  <div class="grid-bg"></div>
+  <div class="confwrap" id="conf"></div>
+  <div class="sw">
+    <span class="wemb">🎖</span>
+    <div class="wtit">MISSION COMPLETE</div>
+    <div class="wsub">★ ★ ★ &nbsp; ALL LOCKS BREACHED — EXTRACTION PROTOCOL ACTIVE &nbsp; ★ ★ ★</div>
+    <div class="wbody">
+      <strong>CORPORAL ELLIS — YOU'VE DONE IT.</strong><br><br>
+      All four locks cracked. Emergency Extraction Protocol is transmitting. A rescue party has been dispatched and will reach your position at 0545 hours — minutes before the enemy advance.<br><br>
+      You survived the trenches, the gas clouds, and the darkness — armed only with the evidence of history itself.
+    </div>
+    <div class="agrid">
+      <div class="ac"><div class="al">Lock 1 — Gas Warfare</div><div class="av">SIX THOUSAND</div></div>
+      <div class="ac"><div class="al">Lock 2 — Tank Codename</div><div class="av">WATER CARRIER</div></div>
+      <div class="ac"><div class="al">Lock 3 — Trench System</div><div class="av">SIX FEET RESERVE LINE</div></div>
+      <div class="ac"><div class="al">Lock 4 — Red Baron</div><div class="av">RICHTHOFEN-80-RED</div></div>
+    </div>
+    <div class="lrnbox">
+      <div class="lh">// DEBRIEF — WHAT YOU LEARNED</div>
+      <p>Every answer came from <em>real primary sources</em> — actual soldier diaries, war office directives, RFC combat reports, and field engineering notebooks from WWI. The gas attack at Ypres, the tank's secret codename, the depth of British trenches, and the Red Baron's 80 victories are all historically documented.<br><br>
+      <em>Primary sources are the closest humanity can get to the lived truth of history.</em></p>
+    </div>
+    <button class="btnL" onclick="location.reload()">↩ REPLAY MISSION</button>
+  </div>
+</div>
+
+<script>
+const slv={1:false,2:false,3:false,4:false};
+let cnt=0;
+
+function updateClock(){
+  const n=new Date();
+  const el=document.getElementById('hclock');
+  if(el) el.textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+}
+setInterval(updateClock,1000);updateClock();
+
+function startGame(){
+  document.getElementById('intro-screen').classList.remove('active');
+  document.getElementById('game-screen').classList.add('active');
+  showPanel('welcome',document.getElementById('nb0'));
+}
+
+function showPanel(id,btn){
+  document.querySelectorAll('.ppage').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.querySelectorAll('.nbtn').forEach(b=>b.classList.remove('na'));
+  if(btn) btn.classList.add('na');
+}
+
+function th(id){document.getElementById(id).classList.toggle('vis');}
+
+function flash(msg,type){
+  const b=document.getElementById('abar');
+  b.textContent=msg;
+  b.className='abar show'+(type==='ok'?' ok':'');
+  setTimeout(()=>b.classList.remove('show','ok'),3000);
+}
+
+function chk(num,ans,iid,fid,hid,nid,nsid,lbid){
+  if(slv[num])return;
+  const v=document.getElementById(iid).value.trim().toUpperCase().replace(/\s+/g,' ');
+  const f=document.getElementById(fid);
+  if(v===ans){
+    slv[num]=true;cnt++;
+    f.textContent='>> LOCK '+num+' OPENED — CODE ACCEPTED';
+    f.className='lfb ok';
+    const inp=document.getElementById(iid);
+    inp.disabled=true;
+    inp.style.cssText+='border-bottom-color:var(--glow);color:var(--glow);box-shadow:0 0 10px rgba(0,255,65,.18);';
+    const chip=document.createElement('div');
+    chip.className='schip';chip.innerHTML='✔ LOCK '+num+' — DECRYPTED';
+    document.getElementById(lbid).appendChild(chip);
+    const hl=document.getElementById(hid);hl.classList.add('ok');hl.textContent='✔';
+    document.getElementById(nsid).textContent='OPEN';
+    document.getElementById(nid).classList.add('sn');
+    const pct=(cnt/4)*100;
+    document.getElementById('pgbar').style.width=pct+'%';
+    document.getElementById('stprog').textContent=cnt+' / 4';
+    if(cnt===4)document.getElementById('stproto').textContent='ACTIVE';
+    document.getElementById('hstatus').textContent=cnt+'/4 OPEN';
+    flash('>> LOCK '+num+' DECRYPTED — PROGRESS: '+cnt+'/4','ok');
+    if(cnt===4)setTimeout(showSuccess,1400);
+  } else {
+    f.textContent='>> ERROR: INCORRECT CODE — RE-EXAMINE PRIMARY SOURCES';
+    f.className='lfb err';
+    const inp=document.getElementById(iid);
+    inp.style.cssText+='border-bottom-color:var(--red-alert);box-shadow:0 0 8px rgba(255,34,0,.18);';
+    flash('>> LOCK '+num+' REJECTED — INCORRECT CODE','');
+    setTimeout(()=>{f.textContent='';inp.style.borderBottomColor='';inp.style.boxShadow='';},2500);
+  }
+}
+
+function showSuccess(){
+  document.getElementById('game-screen').classList.remove('active');
+  document.getElementById('success-screen').classList.add('active');
+  const c=document.getElementById('conf');
+  const cols=['#00ff41','#39ff14','#006600','#ffb700','#c8ffcc','#003300','#80ff90'];
+  for(let i=0;i<110;i++){
+    const p=document.createElement('div');p.className='cp';
+    p.style.left=Math.random()*100+'%';
+    p.style.background=cols[~~(Math.random()*cols.length)];
+    p.style.borderRadius=Math.random()>.5?'50%':'2px';
+    p.style.width=(4+Math.random()*8)+'px';p.style.height=p.style.width;
+    p.style.animationDelay=Math.random()*3+'s';
+    p.style.animationDuration=(3+Math.random()*2)+'s';
+    c.appendChild(p);
+  }
+}
+</script>
+</body>
+</html>
